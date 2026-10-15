@@ -28,7 +28,7 @@ if str(project_root) not in sys.path:
 
 from CMAES_classic_singlemap import dynamics_3d, waypoint_3d
 from evalmetrics import compute_reconstruction_rmse
-from gaussianprocesstraining import (
+from functions import (
     build_correlated_noise_covariance,
     build_pyramid_lattice_3d,
     build_sensor_matrix,
@@ -176,7 +176,7 @@ PARALLEL_BRANCHES = False  # True -> each rank evaluates its BRANCH_COUNT branch
 # seed, so each lands in whatever basin its own random search finds. There is
 # deliberately NO diversity/distance term in the CMA-ES objective: distinctness
 # is enforced afterwards by the Jaccard filter below. The step size (20 m xy /
-# 8 m z) and population (12) come from gaussianprocesstraining.py; the number
+# 8 m z) and population (12) come from functions.py; the number
 # of generations is set here for the collector only, so the live CMA-ES planner
 # used as an evaluation baseline keeps its own budget.
 CMA_SOLUTIONS_PER_BRANCH = 8
@@ -213,7 +213,7 @@ COLLECTOR_RESUME = os.environ.get("COLLECTOR_RESUME", "0") == "1"
 # --- random-start configuration ---
 STARTS_PER_MAP = 4
 START_MARGIN = step * 2  # keep starts off the map edge, same margin convention
-                          # used elsewhere in gaussianprocesstraining.py
+                          # used elsewhere in functions.py
 START_POSITION_SEED = 990_002  # arbitrary, disjoint from SENSORNOISE_SEED so the
                                 # position draw and the sensor-noise stream don't
                                 # share a seed value

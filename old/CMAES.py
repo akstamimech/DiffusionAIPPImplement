@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
-from gaussianprocesstraining import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp
+from functions import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp
 
 horizon = 4
 

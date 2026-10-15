@@ -15,7 +15,7 @@ if str(project_root) not in sys.path:
 
 from CMAES_classic_singlemap import dynamics_3d, waypoint_3d
 from evalmetrics import compute_reconstruction_rmse
-from gaussianprocesstraining import (
+from functions import (
     build_correlated_noise_covariance,
     build_sensor_matrix,
     build_spline_trajectory_3d,
@@ -38,7 +38,7 @@ except ImportError:
 # Copy of DataCollector_3D.py. The physics/sensor/planner stack (dynamics_3d,
 # apply_measurement_update_3d, grid_search_3d, cma_es_refine_waypoints_3d) is
 # used exactly as it currently lives in CMAES_classic_singlemap.py and
-# gaussianprocesstraining.py - unchanged. What differs from DataCollector_3D.py:
+# functions.py - unchanged. What differs from DataCollector_3D.py:
 #   - no beam search. Each map is rolled out as STARTS_PER_MAP independent
 #     linear chains (one per random initial (cx, cy)), each doing
 #     plan -> execute execution_chunk steps -> record -> repeat for RANKLIM
@@ -80,7 +80,7 @@ ANGLE_OF_VIEW = 60.0
 # --- random-start configuration ---
 STARTS_PER_MAP = 5
 START_MARGIN = step * 2  # keep starts off the map edge, same margin convention
-                          # used elsewhere in gaussianprocesstraining.py
+                          # used elsewhere in functions.py
 START_POSITION_SEED = 990_001  # arbitrary, disjoint from SENSORNOISE_SEED so the
                                 # position draw and the sensor-noise stream don't
                                 # share a seed value

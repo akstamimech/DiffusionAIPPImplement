@@ -1,5 +1,5 @@
 import numpy as np
-LCB = True  # must stay in sync with gaussianprocesstraining.py's LCB - unsynced copy, no shared import
+LCB = True  # must stay in sync with functions.py's LCB - unsynced copy, no shared import
 
 def compute_task_completion(
     pos_history,

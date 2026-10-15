@@ -14,7 +14,7 @@ from Diffusion.DPPOTRAINING import (
     collect_rollouts, _rollout_trajectory, SENSORNOISE_SEED,
 )
 import Diffusion.threeDSparseTransDiffusion as diffusion
-from gaussianprocesstraining import build_spline_trajectory_3d
+from functions import build_spline_trajectory_3d
 
 env = build_environment()
 _load_checkpoint(DEFAULT_CHECKPOINT, diffusion.device)

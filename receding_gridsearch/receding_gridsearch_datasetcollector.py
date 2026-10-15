@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
-from gaussianprocesstraining import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
+from functions import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
 import torch
 
 
@@ -23,7 +23,7 @@ CHUNK_PREFIX = "./trajectory_dataset_chunk"
 
 
 """
-CAREFUL: gaussianprocesstraining.py has a very simple gradient based planner that I commented out for now.
+CAREFUL: functions.py has a very simple gradient based planner that I commented out for now.
 """
 
 

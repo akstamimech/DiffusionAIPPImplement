@@ -92,7 +92,7 @@ Implemented so far:
 HOW TO RUN:
     Run as a module from the `scripts` directory (not `python DPPOTRAINING_overnight.py` from
     inside Diffusion/) so that both the `Diffusion` package and its sibling modules at the
-    scripts root (gaussianprocesstraining, evalmetrics, CMAES_classic_singlemap,
+    scripts root (functions, evalmetrics, CMAES_classic_singlemap,
     Diffusionplanner_singlemap) are importable:
         python -m Diffusion.DPPOTRAINING_overnight
 
@@ -129,7 +129,7 @@ REPO_DIR = SCRIPT_DIR
 if str(REPO_DIR) not in sys.path:
     sys.path.insert(0, str(REPO_DIR))
 
-from gaussianprocesstraining import build_spline_trajectory_3d, initialize_gp
+from functions import build_spline_trajectory_3d, initialize_gp
 from evalmetrics import compute_reconstruction_rmse
 from CMAES_classic_singlemap import dynamics_3d, waypoint_3d
 from Diffusionplanner_singlemap import apply_measurement_update_3d, build_true_map_flat

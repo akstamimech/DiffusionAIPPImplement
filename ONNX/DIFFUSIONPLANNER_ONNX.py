@@ -4,13 +4,13 @@ import os
 import sys
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent.parent   # scripts/: gaussianprocesstraining.py, evalmetrics.py, CMAES_classic_singlemap.py, csv/, Vizualization/
+SCRIPT_DIR = Path(__file__).resolve().parent.parent   # scripts/: functions.py, evalmetrics.py, CMAES_classic_singlemap.py, csv/, Vizualization/
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
 from tqdm import tqdm
-from gaussianprocesstraining import (
+from functions import (
     create_plots_and_gifs,
     grid_measure,
     importance_filter,
@@ -57,7 +57,8 @@ WALLCLOCK_SECONDS = float(os.environ.get("WALLCLOCK_SECONDS", "150"))  # <=0 = u
                                                                       # timesteps OR this many real
                                                                       # seconds, whichever comes first
 
-# Each simulation step is 1 vector step, treated as 1 meter of real flight. At
+# Each simulation step moves the vehicle one grid step, which is 2 m of real
+# flight (the 51 x 51 grid represents a 100 m x 100 m field at 2 m spacing). At
 # a flight speed of FLIGHT_SPEED_MPS, that step physically takes at least
 # STEP_DISTANCE_METERS / FLIGHT_SPEED_MPS seconds. When ENFORCE_MIN_STEP_TIME
 # is on, a step that computed (dynamics + any replan + sensor update) faster
@@ -65,7 +66,7 @@ WALLCLOCK_SECONDS = float(os.environ.get("WALLCLOCK_SECONDS", "150"))  # <=0 = u
 # longer (e.g. one that triggered a diffusion replan) is left alone - this is
 # a floor, not a fixed duration.
 ENFORCE_MIN_STEP_TIME = os.environ.get("ENFORCE_MIN_STEP_TIME", "1") == "1"
-STEP_DISTANCE_METERS = 1.0
+STEP_DISTANCE_METERS = step   # one grid step per simulation step (2 m)
 FLIGHT_SPEED_MPS = 3.0
 MIN_STEP_SECONDS = STEP_DISTANCE_METERS / FLIGHT_SPEED_MPS
 

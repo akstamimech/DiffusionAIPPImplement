@@ -8,9 +8,9 @@ import os
 from pathlib import Path
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
-from gaussianprocesstraining import noise_model, utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
-from gaussianprocesstraining import importance_filter, grid_measure, next_best_waypoint, cma_es_refine_waypoints_3d, build_spline_trajectory_3d, fov_lateral_radius, resolution_block_size, grid_search_3d, grid_search_3d_softmax
-from gaussianprocesstraining import (
+from functions import noise_model, utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
+from functions import importance_filter, grid_measure, next_best_waypoint, cma_es_refine_waypoints_3d, build_spline_trajectory_3d, fov_lateral_radius, resolution_block_size, grid_search_3d, grid_search_3d_softmax
+from functions import (
     build_correlated_noise_covariance,
     build_sensor_matrix,
     noise_model,
@@ -41,7 +41,7 @@ USE_SOFTMAX_GRID_SEARCH = False  # False -> original deterministic grid_search_3
                                  # grid_search_3d_softmax, which samples the warm start
                                  # stochastically so replans can diverge into different
                                  # trajectories. Tune temperature/seed in
-                                 # gaussianprocesstraining.GRID_SEARCH_SOFTMAX_TEMPERATURE
+                                 # functions.GRID_SEARCH_SOFTMAX_TEMPERATURE
                                  # / GRID_SEARCH_SOFTMAX_SEED.
 WALLCLOCK_SECONDS = float(os.environ.get("WALLCLOCK_SECONDS", "150"))  # <=0 = unconstrained (timestep
                                                                       # loop runs to completion); otherwise

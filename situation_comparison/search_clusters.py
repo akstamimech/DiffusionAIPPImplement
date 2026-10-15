@@ -11,7 +11,7 @@ import numpy as np
 from scipy import ndimage
 
 from situation_lib import replay_diag_belief_history, UTILITY_THRESHOLD, BETA
-from gaussianprocesstraining import LCB
+from functions import LCB
 
 SIZE_MIN = 15
 

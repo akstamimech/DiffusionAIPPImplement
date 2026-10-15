@@ -15,7 +15,7 @@ if str(project_root) not in sys.path:
 
 from CMAES_classic_singlemap import dynamics_3d, waypoint_3d
 from evalmetrics import compute_reconstruction_rmse
-from gaussianprocesstraining import (
+from functions import (
     build_correlated_noise_covariance,
     build_sensor_matrix,
     build_spline_trajectory_3d,

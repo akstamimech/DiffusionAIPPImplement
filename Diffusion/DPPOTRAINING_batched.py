@@ -95,7 +95,7 @@ REPO_DIR = SCRIPT_DIR
 if str(REPO_DIR) not in sys.path:
     sys.path.insert(0, str(REPO_DIR))
 
-from gaussianprocesstraining import initialize_gp, importance_filter
+from functions import initialize_gp, importance_filter
 from evalmetrics import compute_reconstruction_rmse
 from Diffusionplanner_singlemap import build_true_map_flat
 

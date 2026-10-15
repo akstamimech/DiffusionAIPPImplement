@@ -8,7 +8,7 @@ from pathlib import Path
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
 from tqdm import tqdm
-from gaussianprocesstraining import (
+from functions import (
     build_correlated_noise_covariance,
     build_sensor_matrix,
     create_plots_and_gifs,

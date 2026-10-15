@@ -1,7 +1,7 @@
 """
 The numpy-only aipp core must reproduce the original sklearn/scipy implementation exactly (up to float rounding).
 
-Compares, against gaussianprocesstraining.py / CMAES_classic_singlemap.py (the code the training data was made with):
+Compares, against functions.py / CMAES_classic_singlemap.py (the code the training data was made with):
   - prior covariance (sklearn Matern 3/2)
   - footprint + resolution blocks + noise variance at many poses (every altitude band, borders, corners)
   - the simulated reading, including the exact random draws
@@ -24,7 +24,7 @@ for p in (str(ONNX_DIR), str(SCRIPTS_DIR)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from gaussianprocesstraining import (  # noqa: E402  (original implementation)
+from functions import (  # noqa: E402  (original implementation)
     build_correlated_noise_covariance,
     build_sensor_matrix,
     initialize_gp,

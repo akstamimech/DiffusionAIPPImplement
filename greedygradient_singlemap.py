@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
-from gaussianprocesstraining import (
+from functions import (
     noise_model,
     grid_search_3d,
     create_plots_and_gifs,
@@ -62,7 +62,7 @@ ZMAX = 40.0
 Single-map greedy-gradient control script.
 Same dynamics, sensor/noise model, Kalman update, and map/settings as
 CMAES_classic_singlemap.py. The planner reuses CMAES_classic_singlemap.py's
-3D pyramid-lattice grid search (gaussianprocesstraining.grid_search_3d) but
+3D pyramid-lattice grid search (functions.grid_search_3d) but
 with planning_horizon=1, so each replan only scores the single next-best
 grid point (gain/distance, same scoring grid_search_3d always uses) rather
 than an 8-waypoint flight plan - and unlike CMAES_classic_singlemap.py, that

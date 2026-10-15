@@ -8,8 +8,8 @@ import os
 from pathlib import Path
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
-from gaussianprocesstraining import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
-from gaussianprocesstraining import build_sensor_matrix, fov_grid_points, fov_lateral_radius, noise_model
+from functions import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
+from functions import build_sensor_matrix, fov_grid_points, fov_lateral_radius, noise_model
 from evalmetrics import compute_task_completion, compute_reconstruction_rmse, compute_rmse_time_metrics
 from CMAES_classic_singlemap import dynamics_3d, waypoint_3d
 import torch

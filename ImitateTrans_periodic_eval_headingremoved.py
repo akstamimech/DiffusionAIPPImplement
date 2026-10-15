@@ -31,10 +31,10 @@ PLOT_DIR.mkdir(exist_ok=True)
 # ImitateTrans_singlemap.py-style 200-timestep flight on one held-out
 # evaluation map, recording RMSE drop and variance drop, before resuming
 # training. See run_single_map_eval() near the bottom of this file.
-# ImitateTrans.py already lives in scripts/, alongside gaussianprocesstraining.py /
+# ImitateTrans.py already lives in scripts/, alongside functions.py /
 # evalmetrics.py / CMAES_classic_singlemap.py, so no sys.path changes are needed here
 # (unlike threeDSparseTransDiffusion_periodic_eval.py, which lives one directory down).
-from gaussianprocesstraining import (
+from functions import (
     build_correlated_noise_covariance,
     build_sensor_matrix,
     importance_filter,

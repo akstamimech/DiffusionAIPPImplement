@@ -43,7 +43,7 @@ for _p in (SCRIPT_DIR, DIFFUSION_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from gaussianprocesstraining import initialize_gp, importance_filter, build_spline_trajectory_3d
+from functions import initialize_gp, importance_filter, build_spline_trajectory_3d
 from Diffusionplanner_singlemap import (
     apply_measurement_update_3d,
     build_true_map_flat,
@@ -68,14 +68,14 @@ INDEX_CSV = THIS_DIR / "results_index.csv"
 import os
 
 # Defaults match this project's CURRENT live settings (checked directly
-# against gaussianprocesstraining.py / Diffusionplanner_singlemap.py /
+# against functions.py / Diffusionplanner_singlemap.py /
 # ImitateTrans_singlemap.py on 2026-08-17: MAPTYPE=grf, UTILITY_THRESHOLD=0.5,
 # LCB=False/UCB, checkpoints current_best_updated.pth / Imitate_best.pth).
 # This project's map-type settings have flipped between NAIP and GRF multiple
 # times across sessions - RE-VERIFY these against the live files before
 # trusting them if it's been a while; don't assume this comment is still
 # accurate. LCB itself is a hardcoded module-level constant in
-# gaussianprocesstraining.py, NOT env-var controlled, so switching MAPTYPE
+# functions.py, NOT env-var controlled, so switching MAPTYPE
 # here alone does not flip importance-mask polarity - check LCB directly too.
 MAPTYPE = os.environ.get("SITUATION_MAPTYPE", "grf")
 UTILITY_THRESHOLD = float(os.environ.get("SITUATION_UTILITY_THRESHOLD", "0.5"))

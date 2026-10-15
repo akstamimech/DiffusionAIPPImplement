@@ -13,7 +13,7 @@ module level - confirmed by measurement: ~6.4 sec per import, plus an unwanted C
 process. A multiprocessing worker that only needs to run the Kalman-filter/dynamics part of the
 simulation (pure NumPy/SciPy - the part collect_rollouts_batched's module docstring already
 identifies as "can't be GPU-batched") has no use for any of that. This module imports only the
-plain-NumPy pieces (gaussianprocesstraining, CMAES_classic_singlemap) and reimplements the same
+plain-NumPy pieces (functions, CMAES_classic_singlemap) and reimplements the same
 measurement-update math, so worker processes start fast and never touch CUDA.
 
 Measured with this module (16 worker processes, spawn context, BLAS pinned to 1 thread/worker):
@@ -33,7 +33,7 @@ from pathlib import Path
 # Self-sufficient sys.path setup, independent of how the parent process's sys.path was built -
 # a spawned multiprocessing worker is a fresh Python interpreter and isn't guaranteed to inherit
 # path entries the parent added via `-m` invocation semantics rather than explicit sys.path
-# edits. gaussianprocesstraining/CMAES_classic_singlemap live one level up from this file.
+# edits. functions/CMAES_classic_singlemap live one level up from this file.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent.parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
@@ -41,7 +41,7 @@ if _SCRIPTS_DIR not in sys.path:
 import numpy as np
 import threadpoolctl
 
-from gaussianprocesstraining import (
+from functions import (
     build_spline_trajectory_3d,
     build_sensor_matrix,
     noise_model,

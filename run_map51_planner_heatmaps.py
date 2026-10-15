@@ -8,7 +8,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from gaussianprocesstraining import fov_lateral_radius, initialize_gp
+from functions import fov_lateral_radius, initialize_gp
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent

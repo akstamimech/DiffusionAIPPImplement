@@ -3,13 +3,13 @@ Reconstructs, from already-saved executed_trajectory.csv files under
 results_hpc/planner_outputs, how much variance each planner removed
 specifically within "important" regions - grid cells whose GROUND TRUTH
 value is on the important side of GROUND_TRUTH_THRESHOLD (below it under
-LCB/NAIP, above it under UCB/grf - see gaussianprocesstraining.LCB) - as
+LCB/NAIP, above it under UCB/grf - see functions.LCB) - as
 opposed to variance removed over the whole map. MAPTYPE/GROUND_TRUTH_THRESHOLD
 are env-configurable (default grf/0.5) so this doesn't need hand-editing every
 time the map type switches.
 
 Why this is possible without re-running anything: the Kalman/GP covariance
-update (kalman_update / covariance_after_sensor in gaussianprocesstraining.py)
+update (kalman_update / covariance_after_sensor in functions.py)
 is P_new = P - K @ (sensor @ P), which depends only on WHERE the sensor
 looked (sensor matrix, from the recorded x,y,z) and the altitude-dependent
 noise model - never on the actual measured/observed values. So the full
@@ -36,7 +36,7 @@ from scipy.linalg import solve as spd_solve
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from gaussianprocesstraining import (
+from functions import (
     initialize_gp,
     noise_model,
     fov_grid_points,

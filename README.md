@@ -47,14 +47,14 @@ Two kinds of scalar field are supported, selected per-script via the `MAPTYPE` e
 Check each script's own `MAPTYPE` default before running. Individual scripts sometimes differ, and
 several downstream constants (the GP kernel's `sigma2`/lengthscale, the importance-mask direction via the
 `LCB` flag, the utility threshold, and the belief prior mean) all have to move together when switching
-map types. `gaussianprocesstraining.py`'s module-level `LCB`/`COST_EXPONENT` and `initialize_gp()`'s
+map types. `functions.py`'s module-level `LCB`/`COST_EXPONENT` and `initialize_gp()`'s
 kernel defaults are the shared source of truth for most of this.
 
 ## Repository layout
 
 ```
 scripts/
-├── gaussianprocesstraining.py       Shared GP belief tracking, Kalman updates, importance filtering,
+├── functions.py                     Shared GP belief tracking, Kalman updates, importance filtering,
 │                                    grid-search + CMA-ES refinement planners
 ├── evalmetrics.py                   RMSE / variance / task-completion metrics
 ├── important_region_variance_from_trajectories.py
@@ -74,6 +74,9 @@ scripts/
 │   ├── sample_3d_sparse_trans_diffusion.py   Loads a trained model for sampling
 │   └── checkpoints/                          Saved model weights
 ├── Diffusionplanner_singlemap.py    Diffusion policy, single-map evaluation
+├── ONNX/                            Exported diffusion planner (ONNX, fp32 + INT8) and `aipp/`, the numpy-only
+│                                    package that runs it as a deployable program (belief, planner, path
+│                                    follower, mission loop) with regression tests; see ONNX/README.md
 ├── Kerneltraining/                  GP kernel hyperparameter fitting against real map statistics
 ├── csv/                             Per-map ground-truth grids (`map_<id>_<MAPTYPE>_grid_counts.csv`)
 ├── Vizualization/                   Per-run output: trajectories, plots, GIFs

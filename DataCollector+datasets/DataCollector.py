@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from gaussianprocesstraining import (
+from functions import (
     importance_filter,
     grid_measure,
     next_best_waypoint,

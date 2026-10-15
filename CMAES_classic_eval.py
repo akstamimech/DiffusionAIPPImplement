@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 
-import gaussianprocesstraining as gp_training
-from gaussianprocesstraining import (
+import functions as gp_training
+from functions import (
     build_correlated_noise_covariance,
     build_sensor_matrix,
     build_spline_trajectory_3d,

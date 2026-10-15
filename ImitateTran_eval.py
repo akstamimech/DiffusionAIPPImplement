@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from gaussianprocesstraining import initialize_gp
+from functions import initialize_gp
 from evalmetrics import (
     compute_coverage_efficiency,
     compute_rmse_time_metrics,

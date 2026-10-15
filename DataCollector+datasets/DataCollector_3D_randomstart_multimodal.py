@@ -27,7 +27,7 @@ if str(project_root) not in sys.path:
 
 from CMAES_classic_singlemap import dynamics_3d, waypoint_3d
 from evalmetrics import compute_reconstruction_rmse
-from gaussianprocesstraining import (
+from functions import (
     build_correlated_noise_covariance,
     build_pyramid_lattice_3d,
     build_sensor_matrix,
@@ -129,7 +129,7 @@ PARALLEL_BRANCHES = True  # True -> each rank evaluates its BRANCH_COUNT branche
 # --- random-start configuration ---
 STARTS_PER_MAP = 3
 START_MARGIN = step * 2  # keep starts off the map edge, same margin convention
-                          # used elsewhere in gaussianprocesstraining.py
+                          # used elsewhere in functions.py
 START_POSITION_SEED = 990_001  # arbitrary, disjoint from SENSORNOISE_SEED so the
                                 # position draw and the sensor-noise stream don't
                                 # share a seed value

@@ -13,7 +13,7 @@ import torch
 
 XY_SCALE = 100.0
 GRID_SIZE = 51
-STEP = 2.0  # matches gaussianprocesstraining.py's step; xs/ys = arange(0, 100+eps, 2) -> 51 points
+STEP = 2.0  # matches functions.py's step; xs/ys = arange(0, 100+eps, 2) -> 51 points
 
 
 def make_position_marker_maps(positions, grid_size=51, marker_radius=2):

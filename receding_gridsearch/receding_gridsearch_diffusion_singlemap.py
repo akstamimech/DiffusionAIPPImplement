@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
-from gaussianprocesstraining import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
+from functions import utility_function, sampler, create_plots_and_gifs, kalman_update, initialize_gp, grid_search
 from evalmetrics import compute_task_completion, compute_coverage_efficiency
 import torch
 
@@ -20,7 +20,7 @@ if str(DIFFUSION_DIR) not in sys.path:
 import SparseDiffusion as diffusion
 
 step = 1.0  #THIS STEP IS FOR DYNAMICS, THE STEP TAKEN, NOT GP
-GP_STEP = 4.0 #NEED TO CHANGE THIS IN gaussianprocesstraining.py AS WELL
+GP_STEP = 4.0 #NEED TO CHANGE THIS IN functions.py AS WELL
 timealloted = 200
 beta = 0.1
 alpha = 0.1

@@ -49,7 +49,7 @@ DIFFUSION_DIR = SCRIPT_DIR / "Diffusion"
 sys.path.insert(0, str(DIFFUSION_DIR))
 
 import Diffusionplanner_singlemap as sim
-from gaussianprocesstraining import initialize_gp
+from functions import initialize_gp
 from sample_3d_sparse_trans_diffusion import diffusion
 
 OUT_DIR = SCRIPT_DIR / "hero_shot_data"
