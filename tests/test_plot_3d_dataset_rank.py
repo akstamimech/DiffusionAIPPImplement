@@ -5,7 +5,7 @@ import torch
 
 matplotlib.use("Agg")
 
-from plot_3d_dataset_rank import build_figure, select_samples, validate_dataset
+from plots.plot_3d_dataset_rank import build_figure, select_samples, validate_dataset
 
 
 def make_dataset():

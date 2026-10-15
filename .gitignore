@@ -17,7 +17,7 @@ csv/
 .env
 .venv/
 .DS_Store
-Diffusion/old/
+legacy/diffusion_old/
 
 # one-off analysis / plotting / recording / sweep scripts (kept locally, not in the repo)
 plot_*.py
@@ -31,9 +31,9 @@ Vizualization/
 Vizualization_*/
 planner_outputs/
 results_*/
-Diffusion/plots/
-Diffusion/snapshot_*.png
-Diffusion/scratch_*
+training/diffusion/plots/
+training/diffusion/snapshot_*.png
+training/diffusion/scratch_*
 checkpoint_sweep_*.csv
 checkpoint_sweep_*.png
 
@@ -54,7 +54,7 @@ gif_first_frames/
 first_frames_white/
 start_frames/
 smoketest_cmaes_datacollector_out/
-/plots/
+/results/
 situation_comparison/plots/
 situation_comparison/results/
 situation_comparison/results_index.csv
@@ -63,6 +63,7 @@ situation_comparison/results_index.csv
 *.md
 checkpoint_sweep_*
 *sweep*
+!/sweeps/
 animate_reverse_process.py
 combine_*
 compare_*

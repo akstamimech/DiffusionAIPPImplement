@@ -38,20 +38,20 @@ from pathlib import Path
 import numpy as np
 
 SCRIPT_DIR = Path(__file__).resolve().parent.parent  # Thesis/scripts
-DIFFUSION_DIR = SCRIPT_DIR / "Diffusion"
+DIFFUSION_DIR = SCRIPT_DIR / "training" / "diffusion"
 for _p in (SCRIPT_DIR, DIFFUSION_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
 from functions import initialize_gp, importance_filter, build_spline_trajectory_3d
-from Diffusionplanner_singlemap import (
+from legacy.singlemap.Diffusionplanner_singlemap import (
     apply_measurement_update_3d,
     build_true_map_flat,
     load_diffusion_model,
     sample_diffusion_trajectory,
 )
-from CMAES_classic_singlemap import real_receding_horizon_planner
-from ImitateTrans_singlemap import (
+from legacy.singlemap.CMAES_classic_singlemap import real_receding_horizon_planner
+from legacy.singlemap.ImitateTrans_singlemap import (
     load_imitate_model,
     sample_imitation_trajectory,
     ZMIN as IMITATE_ZMIN,
@@ -68,8 +68,8 @@ INDEX_CSV = THIS_DIR / "results_index.csv"
 import os
 
 # Defaults match this project's CURRENT live settings (checked directly
-# against functions.py / Diffusionplanner_singlemap.py /
-# ImitateTrans_singlemap.py on 2026-08-17: MAPTYPE=grf, UTILITY_THRESHOLD=0.5,
+# against functions.py / legacy/singlemap/Diffusionplanner_singlemap.py /
+# legacy/singlemap/ImitateTrans_singlemap.py on 2026-08-17: MAPTYPE=grf, UTILITY_THRESHOLD=0.5,
 # LCB=False/UCB, checkpoints current_best_updated.pth / Imitate_best.pth).
 # This project's map-type settings have flipped between NAIP and GRF multiple
 # times across sessions - RE-VERIFY these against the live files before

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from CMAES_classic_eval import write_variance_trace
+from legacy.eval.CMAES_classic_eval import write_variance_trace
 
 
 class VarianceTraceCsvTests(unittest.TestCase):
