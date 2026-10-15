@@ -1,6 +1,4 @@
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import ConstantKernel, Matern
 import matplotlib.pyplot as plt
 import os
 import sys
@@ -13,30 +11,27 @@ import imageio.v2 as imageio
 from matplotlib.patches import Rectangle
 from tqdm import tqdm
 from gaussianprocesstraining import (
-    build_correlated_noise_covariance,
-    build_sensor_matrix,
     create_plots_and_gifs,
     grid_measure,
     importance_filter,
-    initialize_gp,
-    kalman_update,
-    noise_model,
-    sample_correlated_sensor_noise,
 )
 from evalmetrics import compute_task_completion, compute_coverage_efficiency, compute_reconstruction_rmse, compute_rmse_time_metrics
 import json
 import time
-from CMAES_classic_singlemap import compute_fov, dynamics_3d, waypoint_3d
 
 ONNX_DIR = Path(__file__).resolve().parent   # this folder: exported models + deploy JSON + onnx_sample_reference.py
 if str(ONNX_DIR) not in sys.path:
     sys.path.insert(0, str(ONNX_DIR))
 
+# The belief, the planner, the path follower and the mission loop are the aipp core (the planner needs
+# onnxruntime, the rest is numpy only). Only the simulated camera and vehicle (aipp.sim) are simulator-specific.
+from aipp import GPBelief, GridSpec, KernelSpec, Mission, MissionConfig, PathFollower, SensorSpec
+from aipp.planner import DiffusionPlanner, PlannerConfig
+from aipp.sim import PointMassVehicle, SimSensor
+
 # The network runs through onnxruntime (no PyTorch, no training module, no dataset). Everything the
 # training code used to derive from its dataset at import time (belief normalization constants, noise
 # schedule, coordinate bounds) is read from the deploy JSON that was exported with the model.
-from onnx_sample_reference import Planner
-
 
 step = 2.0
 timealloted = int(os.environ.get("TIMEALLOTED", "4000"))
@@ -80,10 +75,10 @@ DDIM_STEPS = int(os.environ["DDIM_STEPS"]) if os.environ.get("DDIM_STEPS") else 
 ORT_THREADS = int(os.environ["ORT_THREADS"]) if os.environ.get("ORT_THREADS") else None  # None = onnxruntime default
 
 INIT_ALTITUDE = 10.0
-_deploy_world = json.loads(ONNX_DEPLOY_JSON.read_text())["world"]
-ZMIN = float(_deploy_world["z_min_m"])
-ZMAX = float(_deploy_world["z_max_m"])
-ANGLE_OF_VIEW = 60.0
+GRID = GridSpec(step=step)
+KERNEL = KernelSpec()   # NAIP-fitted Matern 3/2 prior
+SENSOR = SensorSpec()
+ANGLE_OF_VIEW = SENSOR.angle_of_view_deg
 START_X = float(os.environ.get("START_X", "4.0"))
 START_Y = float(os.environ.get("START_Y", "4.0"))
 
@@ -92,46 +87,6 @@ Single-map diffusion planner running the exported ONNX network (ONNX/DIFFUSIONPL
 Diffusionplanner_singlemap_headingremoved.py with the PyTorch model swapped for onnxruntime.
 This script runs one chosen map and reports task completion after a single execution.
 """
-
-
-def load_diffusion_model(onnx_path=None, deploy_json=None):
-    return Planner(onnx_path or ONNX_MODEL, deploy_json or ONNX_DEPLOY_JSON, threads=ORT_THREADS, seed=RUN_SEED)
-
-
-def sample_diffusion_trajectory(
-    model,
-    current_position,
-    current_mean,
-    current_var,
-    grid_step=step,
-    bounds=None,
-    num_steps=None,
-    clip_x0=True
-):
-    """Same contract as the PyTorch planner: returns (dense_traj [3, 41], control_waypoints [3, 8]) in meters."""
-    position = np.asarray(current_position, dtype=np.float64).reshape(3)
-    maps, position_normalized, total_variance = model.build_inputs(current_mean, current_var, position)
-    sample = model.sample_normalized(
-        maps,
-        position_normalized,
-        total_variance,
-        eta=ETA,
-        clip_x0=clip_x0,
-        num_steps=num_steps or DDIM_STEPS,
-    )
-    control_waypoints = model.denormalize(sample)                      # [8, 3] meters, clipped to the field and altitude band
-    dense_traj = model.cubic_spline(position, control_waypoints).T.copy()   # [3, 41]
-    control_waypoints = control_waypoints.T.copy()                      # [3, 8]
-    if bounds is not None:
-        xmin, xmax, ymin, ymax, zmin, zmax = bounds
-        padding = grid_step * 2
-        dense_traj[0] = np.clip(dense_traj[0], xmin + padding, xmax - padding)
-        dense_traj[1] = np.clip(dense_traj[1], ymin + padding, ymax - padding)
-        dense_traj[2] = np.clip(dense_traj[2], zmin, zmax)
-        control_waypoints[0] = np.clip(control_waypoints[0], xmin + padding, xmax - padding)
-        control_waypoints[1] = np.clip(control_waypoints[1], ymin + padding, ymax - padding)
-        control_waypoints[2] = np.clip(control_waypoints[2], zmin, zmax)
-    return dense_traj, control_waypoints
 
 
 def build_true_map_flat(pts, X_test):
@@ -144,44 +99,6 @@ def build_true_map_flat(pts, X_test):
         if idx.size:
             true_map_flat[idx[0]] = value
     return true_map_flat
-
-
-def apply_measurement_update_3d(cx, cy, cz, mu, P, true_map_flat, xs, ys, rng):
-    fov = compute_fov(
-        cz=cz,
-        xs=xs,
-        ys=ys,
-        angle_of_view=ANGLE_OF_VIEW,
-        step=step,
-        cx=cx,
-        cy=cy,
-    )
-    sensor, block_ids = build_sensor_matrix(
-        fov,
-        cz,
-        xs,
-        ys,
-        return_block_ids=True,
-    )
-    sensor_variance = noise_model(cz)
-    z_meas = sensor @ true_map_flat
-    z_meas += sample_correlated_sensor_noise(
-        block_ids,
-        sensor_variance,
-        rng,
-    )
-    noise_covariance = build_correlated_noise_covariance(
-        block_ids,
-        sensor_variance,
-    )
-    return kalman_update(
-        mu,
-        P,
-        sensor,
-        z_meas,
-        noise_covariance,
-        block_ids=block_ids,
-    )
 
 
 # def receding_horizon_planner(cx, cy, sorted_util_values, alpha, horizon=planning_horizon):
@@ -250,8 +167,13 @@ if __name__ == "__main__":
     output_dir = results_root / output_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    diffusion_model = load_diffusion_model()
-    print(f"ONNX planner: model {ONNX_MODEL.name}, deploy JSON {ONNX_DEPLOY_JSON.name}, T={diffusion_model.T}, eta={ETA}, steps={DDIM_STEPS or diffusion_model.T}", flush=True)
+    planner = DiffusionPlanner(
+        ONNX_MODEL, ONNX_DEPLOY_JSON, GRID,
+        PlannerConfig(eta=ETA, ddim_steps=DDIM_STEPS),
+        threads=ORT_THREADS, seed=RUN_SEED,
+    )
+    ZMIN, ZMAX = planner.z_range
+    print(f"ONNX planner: model {ONNX_MODEL.name}, deploy JSON {ONNX_DEPLOY_JSON.name}, T={planner.T}, eta={ETA}, steps={DDIM_STEPS or planner.T}", flush=True)
 
     data = np.loadtxt(
         csv_path / f"map_{selected_map}_{MAPTYPE}_grid_counts.csv",
@@ -259,7 +181,10 @@ if __name__ == "__main__":
         skiprows=1,
     )
 
-    gp, X_test, mean, cov, xs, ys, X, Y, xmin, xmax, ymin, ymax, step = initialize_gp()
+    xs, ys = GRID.xs, GRID.ys
+    X, Y = GRID.meshgrid()
+    X_test = GRID.cell_coordinates()
+    xmin, xmax, ymin, ymax = GRID.xmin, GRID.xmax, GRID.ymin, GRID.ymax
 
     pts = data[:, 0:3]
     tol = 1e-9
@@ -269,15 +194,26 @@ if __name__ == "__main__":
     )
     pts = pts[mask]
 
-    N = X_test.shape[0]
     true_map_flat = build_true_map_flat(pts, X_test)
 
     rng = np.random.default_rng(SENSORNOISE_SEED + selected_map)
 
+    # The mission: simulated camera and vehicle around the deployable core (belief, planner, follower, loop).
     # Under LCB/NAIP, the pessimistic prior starts below the importance threshold.
-    mean = np.full(X_test.shape[0], utility_threshold - 0.1)
-    mu = mean.copy()
-    P = cov.copy()
+    belief = GPBelief(GRID, KERNEL, prior_mean=utility_threshold - 0.1)
+    sim_sensor = SimSensor(true_map_flat, GRID, SENSOR, rng)
+    vehicle = PointMassVehicle((START_X, START_Y, INIT_ALTITUDE), GRID, (ZMIN, ZMAX))
+    follower = PathFollower(GRID, (ZMIN, ZMAX), execution_chunk)
+    mission = Mission(
+        belief, sim_sensor, planner, follower, vehicle,
+        MissionConfig(
+            warmup_goal=(80.0, 80.0, INIT_ALTITUDE),
+            wallclock_seconds=WALLCLOCK_SECONDS,
+            min_step_seconds=MIN_STEP_SECONDS if ENFORCE_MIN_STEP_TIME else 0.0,
+        ),
+    )
+
+    mu, P = belief.mu, belief.P
 
     mu_history = []
     P_history = []
@@ -303,12 +239,9 @@ if __name__ == "__main__":
     if collect_viz_history:
         utility_history.append(initial_utility.copy())
 
-    save_every = 5
     lateral_coverage = step * 2
-    samplestep = step
 
-    cx, cy, cz = START_X, START_Y, INIT_ALTITUDE
-    grad_x, grad_y, grad_z = 0.0, 0.0, 0.0
+    cx, cy, cz = vehicle.pose
     pos_history.append((cx, cy))
     pose_history.append((cx, cy, cz))
     altitude_history.append(cz)
@@ -323,179 +256,29 @@ if __name__ == "__main__":
     variance_history = [initial_total_variance]
     print(f"Map {selected_map}: Initial total variance: {initial_total_variance:.4f}")
 
-    utility = initial_utility
-    spline_path = []
-    spline_idx = 0
-    control_waypoints = []
     rmselist = []
     global_rmselist = []
-    wall_time_history = []
 
-    # WALLCLOCK_SECONDS<=0 means unconstrained: the loop below only ever stops
-    # because ts reached timealloted. Otherwise this flight ends either when
-    # the timestep loop naturally finishes or when WALLCLOCK_SECONDS of real
-    # time have elapsed since the flight started, whichever comes first.
-    unconstrained = WALLCLOCK_SECONDS <= 0
-    flight_start_time = time.time()
-    stopped_early = False
+    def observe(rec):
+        """Everything the simulator wants to know about a step: path histories for the plots, and the ground-truth
+        reconstruction error. Runs after the belief update; the mission loop knows nothing about it."""
+        if rec.replanned:
+            print("Replanning...")
+            print("Control waypoints:", rec.plan.waypoints.tolist())
+            print(f"Replanning time: {rec.plan.seconds:.4f} seconds")
+        if rec.clamped:
+            print("Flight plan waypoint was out of bounds and was clamped back into the padded map region.")
 
-    for ts in range(0, timealloted):
-        if not unconstrained and (time.time() - flight_start_time) >= WALLCLOCK_SECONDS:
-            stopped_early = True
-            print(
-                f"Map {selected_map}: wall-clock budget reached at timestep {ts} "
-                f"(of {timealloted}); ending the flight early."
-            )
-            break
+        pos_history.append(rec.pose[:2])
+        pose_history.append(rec.pose)
+        altitude_history.append(rec.pose[2])
+        step_numbers.append(rec.step_number)
+        planned_path_history.append(rec.planned_path_xy)
+        control_waypoint_history.append(rec.control_waypoints_xy)
 
-        step_start_time = time.time()
-
-        if ts <= 1:
-            grad_x, grad_y, grad_z, _ = waypoint_3d(
-                cx,
-                cy,
-                cz,
-                goal_x=80.0,
-                goal_y=80.0,
-                goal_z=INIT_ALTITUDE,
-                step=step,
-            )
-            cx, cy, cz = dynamics_3d(
-                cx,
-                cy,
-                cz,
-                grad_x,
-                grad_y,
-                grad_z,
-                samplestep,
-                xmin,
-                xmax,
-                ymin,
-                ymax,
-                ZMIN,
-                ZMAX,
-                buffer=step * 2,
-            )
-            pos_history.append((cx, cy))
-            pose_history.append((cx, cy, cz))
-            altitude_history.append(cz)
-            step_numbers.append(ts + 1)
-            planned_path_history.append([])
-            control_waypoint_history.append([])
-        else:
-            if ts == 2 or spline_idx >= execution_chunk or spline_idx >= len(spline_path):
-                current_mean = mu.reshape(X.shape)
-                current_var = np.diag(P).reshape(X.shape)
-                start_time = time.time()
-                dense_traj, sparse_controls = sample_diffusion_trajectory(
-                    diffusion_model,
-                    current_position=(cx, cy, cz),
-                    current_mean=current_mean,
-                    current_var=current_var,
-                    grid_step=step,
-                    bounds=(xmin, xmax, ymin, ymax, ZMIN, ZMAX),
-                )
-                end_time = time.time()
-                spline_path = dense_traj.T.tolist()
-                spline_idx = 0
-                control_waypoints = sparse_controls.T.tolist()
-                print("Replanning...")
-                print("Control waypoints:", control_waypoints)
-                print(f"Replanning time: {end_time - start_time:.4f} seconds")
-
-            if spline_idx < len(spline_path):
-                goal_x, goal_y, goal_z = spline_path[spline_idx]
-                grad_x, grad_y, grad_z, waypoint_reached = waypoint_3d(
-                    cx,
-                    cy,
-                    cz,
-                    goal_x=goal_x,
-                    goal_y=goal_y,
-                    goal_z=goal_z,
-                    step=step,
-                )
-
-                if waypoint_reached:
-                    spline_idx += 1
-                    if spline_idx < len(spline_path):
-                        goal_x, goal_y, goal_z = spline_path[spline_idx]
-                        grad_x, grad_y, grad_z, _ = waypoint_3d(
-                            cx,
-                            cy,
-                            cz,
-                            goal_x=goal_x,
-                            goal_y=goal_y,
-                            goal_z=goal_z,
-                            step=step,
-                        )
-                    else:
-                        grad_x, grad_y, grad_z = 0.0, 0.0, 0.0
-
-                if spline_idx < len(spline_path):
-                    x_next, y_next, z_next = spline_path[spline_idx]
-                    padding = step * 2
-                    clamped_x = min(max(x_next, xmin + padding), xmax - padding)
-                    clamped_y = min(max(y_next, ymin + padding), ymax - padding)
-                    clamped_z = min(max(z_next, ZMIN), ZMAX)
-                    if (
-                        clamped_x != x_next
-                        or clamped_y != y_next
-                        or clamped_z != z_next
-                    ):
-                        spline_path[spline_idx] = [
-                            clamped_x,
-                            clamped_y,
-                            clamped_z,
-                        ]
-                        print("Flight plan waypoint was out of bounds and was clamped back into the padded map region.")
-
-                cx, cy, cz = dynamics_3d(
-                    cx,
-                    cy,
-                    cz,
-                    grad_x,
-                    grad_y,
-                    grad_z,
-                    samplestep,
-                    xmin,
-                    xmax,
-                    ymin,
-                    ymax,
-                    ZMIN,
-                    ZMAX,
-                    buffer=step / 2,
-                )
-                pos_history.append((cx, cy))
-                pose_history.append((cx, cy, cz))
-                altitude_history.append(cz)
-                step_numbers.append(ts + 1)
-                planned_path_history.append(
-                    [(x, y) for x, y, _ in spline_path[spline_idx:]]
-                )
-                control_waypoint_history.append(
-                    [(x, y) for x, y, _ in control_waypoints]
-                )
-            else:
-                pos_history.append((cx, cy))
-                pose_history.append((cx, cy, cz))
-                altitude_history.append(cz)
-                step_numbers.append(ts + 1)
-                planned_path_history.append([])
-                control_waypoint_history.append([])
-
-        mu, P = apply_measurement_update_3d(
-            cx,
-            cy,
-            cz,
-            mu,
-            P,
-            true_map_flat,
-            xs,
-            ys,
-            rng,
-        )
+        mu, P = belief.mu, belief.P
         utility = importance_filter(mu, P, beta, threshold=utility_threshold)
-        variance_history.append(float(np.sum(np.diag(P))))
+        variance_history.append(rec.total_variance)
         if collect_viz_history:
             mu_history.append(mu.copy())
             P_history.append(P.copy())
@@ -505,8 +288,6 @@ if __name__ == "__main__":
             var_field = np.diag(P).reshape(X.shape)
             gy, gx = np.gradient(var_field, Y[:, 0], X[0, :])
             grad_history.append((gx, gy))
-
-        util = utility.reshape(len(ys), len(xs))
 
         reconstruction_metrics = compute_reconstruction_rmse(
             mu=mu,
@@ -518,15 +299,22 @@ if __name__ == "__main__":
             xmin=xmin,
             ymin=ymin,
         )
-
         rmselist.append(reconstruction_metrics["occupied_rmse"])
         global_rmselist.append(reconstruction_metrics["global_rmse"])
-        if ENFORCE_MIN_STEP_TIME:
-            step_elapsed = time.time() - step_start_time
-            if step_elapsed < MIN_STEP_SECONDS:
-                time.sleep(MIN_STEP_SECONDS - step_elapsed)
 
-        wall_time_history.append(time.time() - flight_start_time)
+    # WALLCLOCK_SECONDS<=0 means unconstrained: the loop only ever stops because timealloted steps were flown.
+    # Otherwise the flight ends when those steps are done or WALLCLOCK_SECONDS of real time have elapsed,
+    # whichever comes first.
+    result = mission.run(timealloted, observers=[observe])
+    stopped_early = result.stopped_early
+    wall_time_history = [rec.wall_time for rec in result.records]
+    mu, P = belief.mu, belief.P
+    cx, cy, cz = vehicle.pose
+    if stopped_early:
+        print(
+            f"Map {selected_map}: wall-clock budget reached at timestep {len(result.records)} "
+            f"(of {timealloted}); ending the flight early."
+        )
 
     if not rmselist:
         raise SystemExit(
@@ -609,7 +397,7 @@ if __name__ == "__main__":
     if stopped_early:
         print(
             f"Map {selected_map}: flight ended early after "
-            f"{time.time() - flight_start_time:.1f}s due to the wall-clock budget "
+            f"{result.flight_seconds:.1f}s due to the wall-clock budget "
             f"(completed {len(rmselist)} of {timealloted} timesteps)."
         )
 
@@ -658,8 +446,8 @@ if __name__ == "__main__":
     print(f"Map {selected_map}: Gained Utility = {metrics['gained_true_utility']:.4f}, Total Utility = {metrics['total_true_utility']:.4f}, Task Completion = {metrics['task_completion']:.4%}")
     print(f"Map {selected_map}: Coverage Efficiency = {coverage_efficiency:.4f}")
     print(
-        f"Map {selected_map}: Global RMSE = {reconstruction_metrics['global_rmse']:.4f}, "
-        f"Occupied RMSE = {reconstruction_metrics['occupied_rmse']:.4f}"
+        f"Map {selected_map}: Global RMSE = {global_rmselist[-1]:.4f}, "
+        f"Occupied RMSE = {rmselist[-1]:.4f}"
     )
 
     global_rmse_time = compute_rmse_time_metrics(global_rmselist)
