@@ -1,0 +1,79 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# large generated outputs
+checkpoints/
+*.pth
+*.pt
+!/dataset_grf_60.pt
+*.log
+*_viz/
+*_chunks/
+rmse_comparisons_*/
+csv/
+
+# local env/editor
+.env
+.venv/
+.DS_Store
+Diffusion/old/
+
+# one-off analysis / plotting / recording / sweep scripts (kept locally, not in the repo)
+plot_*.py
+analyze_*.py
+analyse_*.py
+record_*.py
+sweep_*.py
+
+# generated result folders and figures
+Vizualization/
+Vizualization_*/
+planner_outputs/
+results_*/
+Diffusion/plots/
+Diffusion/snapshot_*.png
+Diffusion/scratch_*
+checkpoint_sweep_*.csv
+checkpoint_sweep_*.png
+
+# generated figures, animations, tables and logs in the scripts folder (root level only)
+/*.png
+/*.gif
+/*.mp4
+/*.tex
+/*.npz
+/slurm-*
+/results_*.csv
+/sweep_*_summary.csv
+/rerun_failed_80pct_checkpoints_summary.csv
+
+# generated output folders
+hero_shot_data/
+gif_first_frames/
+first_frames_white/
+start_frames/
+smoketest_cmaes_datacollector_out/
+/plots/
+situation_comparison/plots/
+situation_comparison/results/
+situation_comparison/results_index.csv
+
+# docs, helper/comparison scripts, sweep files, smoketests and multimodal tests (kept locally, not in the repo)
+*.md
+checkpoint_sweep_*
+*sweep*
+animate_reverse_process.py
+combine_*
+compare_*
+consolidate_*
+generate_hero_trajectory*
+smoketest_*
+test_multimodal_*
+visualize_map.py
+
+# remaining local-only files
+compile_dataset_chunks.py
+diagnose_cmaes_naip_plateau.py
+naip_shuffle_mapping_2026-08-15.csv
+situation_comparison/.gitignore
