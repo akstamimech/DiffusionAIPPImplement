@@ -42,7 +42,7 @@ import os
 os.environ.setdefault("SELECTED_MAP", "11")
 os.environ.setdefault("MAPTYPE", "NAIP")
 os.environ.setdefault("UTILITY_THRESHOLD", "0.3")
-os.environ.setdefault("DIFFUSION_CHECKPOINT", "Diffusion/checkpoints/UNIMODAL_NAIP_FINAL_DIFF_1000.pth")
+os.environ.setdefault("DIFFUSION_CHECKPOINT", "planners/diffusion/checkpoints/old/UNIMODAL_NAIP_FINAL_DIFF_1000.pth")
 os.environ.setdefault("SKIP_VIZ", "1")
 
 import sys

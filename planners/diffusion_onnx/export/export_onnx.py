@@ -5,7 +5,7 @@ the normalization constants, noise schedule and coordinate bounds (deploy JSON) 
 input/output test vectors.
 
     python planners/diffusion_onnx/export/export_onnx.py   # new_1200.pth, trained on HIGHOPT_DATASET_NAIP_141026.pt
-    python planners/diffusion_onnx/export/export_onnx.py --checkpoint training/diffusion/checkpoints/other.pth --dataset OTHER_DATASET.pt --out planners/diffusion_onnx
+    python planners/diffusion_onnx/export/export_onnx.py --checkpoint planners/diffusion/checkpoints/other.pth --dataset OTHER_DATASET.pt --out planners/diffusion_onnx
 
 IMPORTANT: the training module derives its normalization constants (belief mean/variance centers and
 scales, total-variance stats) from the dataset the model was trained on, at import time. --dataset must
@@ -35,7 +35,7 @@ ROOT = HERE.parents[2]                       # scripts/
 TRAIN = ROOT / "training" / "diffusion"        # the network, its checkpoints and normalization code
 MODELS = HERE.parent                           # planners/diffusion_onnx: where the exported files live
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument("--checkpoint", type=Path, default=TRAIN / "checkpoints" / "new_1200.pth")
+parser.add_argument("--checkpoint", type=Path, default=ROOT / "planners" / "diffusion" / "checkpoints" / "new_1200.pth")
 parser.add_argument("--dataset", type=Path, default=ROOT / "HIGHOPT_DATASET_NAIP_141026.pt")
 parser.add_argument("--out", type=Path, default=MODELS)
 parser.add_argument("--name", default="new_1200")

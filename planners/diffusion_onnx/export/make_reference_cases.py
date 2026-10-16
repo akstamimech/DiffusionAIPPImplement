@@ -18,7 +18,7 @@ ROOT = HERE.parents[2]                       # scripts/
 TRAIN = ROOT / "training" / "diffusion"        # the network, its checkpoints and normalization code
 MODELS = HERE.parent                           # planners/diffusion_onnx: where the exported files live
 p = argparse.ArgumentParser()
-p.add_argument("--checkpoint", type=Path, default=TRAIN / "checkpoints" / "new_1200.pth")
+p.add_argument("--checkpoint", type=Path, default=ROOT / "planners" / "diffusion" / "checkpoints" / "new_1200.pth")
 p.add_argument("--dataset", type=Path, default=ROOT / "HIGHOPT_DATASET_NAIP_141026.pt")
 p.add_argument("--out", type=Path, default=MODELS / "new_1200_reference_cases.npz")
 p.add_argument("--n", type=int, default=16)

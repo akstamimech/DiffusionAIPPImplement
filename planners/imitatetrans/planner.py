@@ -20,7 +20,7 @@ TRAINING_DIR = ROOT                                                  # ImitateTr
 DEFAULT_DATASET = ROOT / "dataset_grf_60.pt"                         # the normalization constants come from this dataset
 # This checkpoint must come from the current (3D) architecture: checkpoints saved before the 2D -> 3D port will not
 # load into WaypointPredictor and need to be retrained.
-DEFAULT_CHECKPOINT = ROOT / "checkpoints" / "imitate_trans_waypoints_epoch_1500_headingremoved.pth"
+DEFAULT_CHECKPOINT = Path(__file__).resolve().parent / "checkpoints" / "imitate_trans_waypoints_epoch_1500_headingremoved.pth"
 
 
 def import_imitation_module(dataset_path=None):

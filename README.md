@@ -48,9 +48,9 @@ that matter (cells above or below some threshold of interest).
 
 | planner | what it does |
 |---|---|
-| `planners/diffusion/` | the trained diffusion policy, PyTorch network |
+| `planners/diffusion/` | the trained diffusion policy, PyTorch network (weights in its `checkpoints/`) |
 | `planners/diffusion_onnx/` | the same policy exported to ONNX (fp32, INT8) for the drone ([README](planners/diffusion_onnx/README.md)) |
-| `planners/imitatetrans/` | imitation baseline: a transformer regresses the expert waypoints in one pass |
+| `planners/imitatetrans/` | imitation baseline: a transformer regresses the expert waypoints in one pass (weights in its `checkpoints/`) |
 | `planners/cmaes/` | the expert: lattice grid search, then CMA-ES refinement |
 | `planners/realgreedy/` | CMA-ES with a one-waypoint horizon, replanned every 5 steps |
 | `planners/greedygradient/` | fly straight at the best lattice point, replan on arrival |
@@ -64,7 +64,7 @@ scripts/
 ├── sim/                  shared simulator: world, camera, drone, metrics, post-hoc replay, run_flight()
 ├── planners/             one folder per planner (see the table above), plus _torch_policy.py shared by the two torch planners
 ├── training/
-│   ├── diffusion/        diffusion model, training loops, sampler modules, checkpoints/
+│   ├── diffusion/        diffusion model, training loops, sampler modules (weights: planners/diffusion/checkpoints/)
 │   ├── imitatetrans/     imitation model and its training loops
 │   └── kernel/           GP kernel hyperparameter fitting against real map statistics
 ├── datacollection/       expert data collector (MPI), dataset tools, smoke tests
@@ -81,7 +81,7 @@ scripts/
 │                         refinement and spline builders, plotting. Used by the expert planner, the trainers
 │                         and the data collector.
 ├── csv/                  per-map ground-truth grids (map_<id>_<MAPTYPE>_grid_counts.csv)
-├── checkpoints/          saved model weights (git-ignored)
+├── checkpoints/          older/other model weights (git-ignored); the diffusion and imitation weights are in planners/<name>/checkpoints/
 ├── *.pt                  training datasets (git-ignored, except the ones committed on purpose)
 ├── Vizualization/        per-run output: trajectories, plots, videos (git-ignored)
 └── CARRYOVER_*.md        session handoff notes: what changed, why, and what's still open

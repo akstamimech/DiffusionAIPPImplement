@@ -18,7 +18,7 @@ from planners._torch_policy import TorchPolicyPlanner, load_state_dict_into
 ROOT = Path(__file__).resolve().parents[2]
 TRAINING_DIR = ROOT / "training" / "diffusion"                                # network, sampler and normalization (training code)
 DEFAULT_DATASET = ROOT / "HIGHOPT_DATASET_NAIP_141026.pt"        # the normalization constants come from this dataset
-DEFAULT_CHECKPOINT = TRAINING_DIR / "checkpoints" / "new_1200.pth"
+DEFAULT_CHECKPOINT = Path(__file__).resolve().parent / "checkpoints" / "new_1200.pth"
 
 
 def import_diffusion_module(dataset_path=None):

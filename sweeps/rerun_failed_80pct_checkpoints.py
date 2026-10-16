@@ -39,8 +39,8 @@ import numpy as np
 from sim import replay as m
 
 SCRIPT_DIR = Path(__file__).resolve().parent.parent
-CHECKPOINT_DIR_DIFFUSION = SCRIPT_DIR / "training" / "diffusion" / "checkpoints"
-CHECKPOINT_DIR_IMITATE = SCRIPT_DIR / "checkpoints"
+CHECKPOINT_DIR_DIFFUSION = SCRIPT_DIR / "planners" / "diffusion" / "checkpoints"
+CHECKPOINT_DIR_IMITATE = SCRIPT_DIR / "planners" / "imitatetrans" / "checkpoints"
 VIZ_DIR = SCRIPT_DIR / "Vizualization"
 LOG_DIR = SCRIPT_DIR / "rerun_failed_80pct_logs"
 LOG_DIR.mkdir(exist_ok=True)

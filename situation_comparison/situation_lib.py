@@ -88,11 +88,11 @@ SAMPLES_PER_SEGMENT = 5
 
 DIFFUSION_CHECKPOINT = Path(os.environ.get(
     "SITUATION_DIFFUSION_CHECKPOINT",
-    str(DIFFUSION_DIR / "checkpoints" / "current_best_updated.pth"),
+    str(SCRIPT_DIR / "planners" / "diffusion" / "checkpoints" / "current_best_updated.pth"),
 ))
 IMITATE_CHECKPOINT = Path(os.environ.get(
     "SITUATION_IMITATE_CHECKPOINT",
-    str(SCRIPT_DIR / "checkpoints" / "Imitate_best.pth"),
+    str(SCRIPT_DIR / "planners" / "imitatetrans" / "checkpoints" / "Imitate_best.pth"),
 ))
 CSV_DIR = SCRIPT_DIR / "csv"
 

@@ -5,7 +5,7 @@ Single-map flight with the diffusion planner (PyTorch network).
 
 Simulator and loop are the shared `sim` / `aipp`; settings: see sim/flight.py plus the planner's own below.
 
-    DIFFUSION_CHECKPOINT   network weights (default Diffusion/checkpoints/new_1200.pth)
+    DIFFUSION_CHECKPOINT   network weights (default planners/diffusion/checkpoints/new_1200.pth)
     DIFFUSION_DATASET_PATH dataset the belief normalization constants are derived from (default HIGHOPT_DATASET_NAIP_141026.pt)
     ETA                    DDIM stochasticity (default 0.0 = deterministic given the initial noise)
     RUN_SEED               seeds numpy and torch (unset: not seeded)

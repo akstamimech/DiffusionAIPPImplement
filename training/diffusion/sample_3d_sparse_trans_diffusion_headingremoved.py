@@ -29,7 +29,9 @@ TRAINING_MODULE_CANDIDATES = (
     SCRIPT_DIR / "threeDSparseTransDiffusion_headingremoved.py",
 )
 DEFAULT_CHECKPOINT = (
-    SCRIPT_DIR
+    SCRIPT_DIR.parent.parent
+    / "planners"
+    / "diffusion"
     / "checkpoints"
     / "sparse_trans_waypoints_epoch_1900_multimodal_3d.pth"
 )

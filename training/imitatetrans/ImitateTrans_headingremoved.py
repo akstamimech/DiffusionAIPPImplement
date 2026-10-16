@@ -27,7 +27,7 @@ from scipy.interpolate import CubicSpline
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent.parent.parent
-CHECKPOINT_DIR = SCRIPT_DIR / "checkpoints"
+CHECKPOINT_DIR = SCRIPT_DIR / "planners" / "imitatetrans" / "checkpoints"
 CHECKPOINT_DIR.mkdir(exist_ok=True)
 PLOT_DIR = SCRIPT_DIR / "plots"
 PLOT_DIR.mkdir(exist_ok=True)
