@@ -2,3 +2,4 @@
 planners/diffusion/checkpoints/sparse_trans_waypoints_epoch_1500_headingremoved.pth filter=lfs diff=lfs merge=lfs -text
 planners/imitatetrans/checkpoints/imitate_trans_waypoints_epoch_1500_headingremoved.pth filter=lfs diff=lfs merge=lfs -text
 planners/diffusion/checkpoints/new_*.pth filter=lfs diff=lfs merge=lfs -text
+planners/imitatetrans/checkpoints/new_imitate_1200.pth filter=lfs diff=lfs merge=lfs -text

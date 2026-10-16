@@ -5,8 +5,8 @@ Single-map flight with the imitation (ImitateTrans) baseline.
 
 Simulator and loop are the shared `sim` / `aipp`; settings: see sim/flight.py plus the planner's own below.
 
-    IMITATE_CHECKPOINT     network weights (default planners/imitatetrans/checkpoints/imitate_trans_waypoints_epoch_1500_headingremoved.pth)
-    IMITATE_DATASET_PATH   dataset the belief normalization constants are derived from (default dataset_grf_60.pt)
+    IMITATE_CHECKPOINT     network weights (default planners/imitatetrans/checkpoints/new_imitate_1200.pth)
+    IMITATE_DATASET_PATH   dataset the belief normalization constants are derived from (default HIGHOPT_DATASET_NAIP_141026.pt)
 """
 import os
 import sys

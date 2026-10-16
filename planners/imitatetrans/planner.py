@@ -17,10 +17,10 @@ from planners._torch_policy import TorchPolicyPlanner, load_state_dict_into
 
 ROOT = Path(__file__).resolve().parents[2]
 TRAINING_DIR = ROOT                                                  # ImitateTrans_headingremoved.py (network + training)
-DEFAULT_DATASET = ROOT / "dataset_grf_60.pt"                         # the normalization constants come from this dataset
+DEFAULT_DATASET = ROOT / "HIGHOPT_DATASET_NAIP_141026.pt"             # the normalization constants come from this dataset (what new_imitate_1200 was trained on)
 # This checkpoint must come from the current (3D) architecture: checkpoints saved before the 2D -> 3D port will not
 # load into WaypointPredictor and need to be retrained.
-DEFAULT_CHECKPOINT = Path(__file__).resolve().parent / "checkpoints" / "imitate_trans_waypoints_epoch_1500_headingremoved.pth"
+DEFAULT_CHECKPOINT = Path(__file__).resolve().parent / "checkpoints" / "new_imitate_1200.pth"
 
 
 def import_imitation_module(dataset_path=None):

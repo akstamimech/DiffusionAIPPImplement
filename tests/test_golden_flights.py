@@ -66,7 +66,14 @@ PLANNERS = {
     },
     "imitatetrans": {
         "script": "planners/imitatetrans/run.py",
-        "scenarios": {"map5_45": {"SELECTED_MAP": "5", "TIMEALLOTED": "45"}},
+        "scenarios": {
+            # pinned to the model the original script used: proves the port equals the original
+            "map5_45": {"SELECTED_MAP": "5", "TIMEALLOTED": "45",
+                        "IMITATE_CHECKPOINT": str(ROOT / "planners" / "imitatetrans" / "checkpoints" / "imitate_trans_waypoints_epoch_1500_headingremoved.pth"),
+                        "IMITATE_DATASET_PATH": str(ROOT / "dataset_grf_60.pt")},
+            # the current defaults (new_imitate_1200.pth, normalized with HIGHOPT)
+            "default_model_map5_45": {"SELECTED_MAP": "5", "TIMEALLOTED": "45"},
+        },
     },
 }
 
