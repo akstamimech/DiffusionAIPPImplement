@@ -64,6 +64,13 @@ PLANNERS = {
         "env": {"ETA": "0.0"},
         "scenarios": {"map5_45": {"SELECTED_MAP": "5", "TIMEALLOTED": "45", "RUN_SEED": "1"}},
     },
+    # No legacy script exists for the ONNX imitation planner: this golden was recorded from the planner itself (fp32 network).
+    # tests/test_mission.py checks that it agrees with the PyTorch policy it was exported from.
+    "imitatetrans_onnx": {
+        "script": "planners/imitatetrans_onnx/run.py",
+        "env": {"ONNX_MODEL": str(ROOT / "planners" / "imitatetrans_onnx" / "new_imitate_1200_fp32.onnx")},
+        "scenarios": {"map5_45": {"SELECTED_MAP": "5", "TIMEALLOTED": "45"}},
+    },
     "imitatetrans": {
         "script": "planners/imitatetrans/run.py",
         "scenarios": {

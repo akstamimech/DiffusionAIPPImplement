@@ -51,6 +51,7 @@ that matter (cells above or below some threshold of interest).
 | `planners/diffusion/` | the trained diffusion policy, PyTorch network (weights in its `checkpoints/`) |
 | `planners/diffusion_onnx/` | the same policy exported to ONNX (fp32, INT8) for the drone ([README](planners/diffusion_onnx/README.md)) |
 | `planners/imitatetrans/` | imitation baseline: a transformer regresses the expert waypoints in one pass (weights in its `checkpoints/`) |
+| `planners/imitatetrans_onnx/` | the same policy exported to ONNX (fp32, INT8), one network call per plan ([README](planners/imitatetrans_onnx/README.md)) |
 | `planners/cmaes/` | the expert: lattice grid search, then CMA-ES refinement |
 | `planners/realgreedy/` | CMA-ES with a one-waypoint horizon, replanned every 5 steps |
 | `planners/greedygradient/` | fly straight at the best lattice point, replan on arrival |

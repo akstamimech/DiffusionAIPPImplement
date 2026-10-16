@@ -270,5 +270,74 @@ class PlannerWrapper(unittest.TestCase):
         self.assertFalse(np.array_equal(make(1).path, make(2).path))      # the initial noise comes from the seeded generator
 
 
+class ImitationOnnxPlannerWrapper(unittest.TestCase):
+    DIR = ROOT / "planners" / "imitatetrans_onnx"
+    MODEL, DEPLOY = DIR / "new_imitate_1200_fp32.onnx", DIR / "new_imitate_1200_deploy.json"
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import onnxruntime  # noqa: F401
+        except ImportError:
+            raise unittest.SkipTest("onnxruntime not installed")
+        if not cls.MODEL.exists():
+            raise unittest.SkipTest(f"{cls.MODEL.name} not found")
+
+    def belief(self):
+        rng = np.random.default_rng(5)
+        mean = np.clip(0.2 + 0.1 * rng.standard_normal((51, 51)), 0.0, 1.0)
+        var = np.clip(0.004 * rng.random((51, 51)), 1e-6, None)
+
+        class MapsBelief:
+            def mean_map(self):
+                return mean
+
+            def var_map(self):
+                return var
+        return MapsBelief(), mean, var
+
+    def test_matches_the_plain_composition_of_reference_calls(self):
+        from planners.imitatetrans_onnx.onnx_reference import Planner
+        from planners.imitatetrans_onnx.planner import ImitationOnnxPlanner
+
+        belief, mean, var = self.belief()
+        pose = (30.0, 44.0, 16.0)
+        plan = ImitationOnnxPlanner(self.MODEL, self.DEPLOY, GRID, threads=1).plan(belief, pose)
+
+        net = Planner(self.MODEL, self.DEPLOY, threads=1)
+        position = np.asarray(pose, dtype=np.float64)
+        waypoints = net.denormalize(net.predict_normalized(*net.build_inputs(mean, var, position)))
+        dense = net.cubic_spline(position, waypoints)
+        for arr in (dense, waypoints):
+            arr[:, 0] = np.clip(arr[:, 0], 4.0, 96.0)
+            arr[:, 1] = np.clip(arr[:, 1], 4.0, 96.0)
+            arr[:, 2] = np.clip(arr[:, 2], 10.0, 40.0)
+        np.testing.assert_array_equal(plan.path, dense)
+        np.testing.assert_array_equal(plan.waypoints, waypoints)
+        self.assertEqual((plan.path.shape, plan.waypoints.shape), ((41, 3), (8, 3)))
+
+    def test_is_deterministic_and_stays_inside_the_padded_field(self):
+        from planners.imitatetrans_onnx.planner import ImitationOnnxPlanner
+
+        belief, _, _ = self.belief()
+        planner = ImitationOnnxPlanner(self.MODEL, self.DEPLOY, GRID, threads=1)
+        self.assertEqual(planner.z_range, (10.0, 40.0))
+        for pose in [(4.0, 4.0, 10.0), (96.0, 96.0, 40.0), (50.0, 2.0, 25.0)]:
+            a, b = planner.plan(belief, pose), planner.plan(belief, pose)
+            np.testing.assert_array_equal(a.path, b.path)                 # no sampling noise: one forward pass
+            for pts in (a.path, a.waypoints):
+                self.assertTrue(np.all(pts[:, :2] >= 4.0) and np.all(pts[:, :2] <= 96.0))
+                self.assertTrue(np.all(pts[:, 2] >= 10.0) and np.all(pts[:, 2] <= 40.0))
+
+    def test_reference_cases_reproduce_the_pytorch_policy(self):
+        cases = self.DIR / "new_imitate_1200_reference_cases.npz"
+        if not cases.exists():
+            self.skipTest("reference cases not built")
+        from planners.imitatetrans_onnx.onnx_reference import selftest
+
+        errs = selftest(self.MODEL, self.DEPLOY, cases)
+        self.assertLess(max(errs), 0.01)                                  # fp32 ONNX == PyTorch to well under a centimeter
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

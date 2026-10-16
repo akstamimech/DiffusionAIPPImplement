@@ -27,6 +27,7 @@ only adds its own.
 | `diffusion/` | trained diffusion policy, PyTorch | `new_1200.pth`, normalization from `HIGHOPT_DATASET_NAIP_141026.pt` |
 | `diffusion_onnx/` | the same policy through onnxruntime | [README](diffusion_onnx/README.md); the one that runs on the drone |
 | `imitatetrans/` | imitation baseline, PyTorch | one forward pass, no sampling |
+| `imitatetrans_onnx/` | the same policy through onnxruntime | [README](imitatetrans_onnx/README.md); one network call per plan |
 | `cmaes/` | the expert | lattice grid search, then CMA-ES; needs the covariance |
 | `realgreedy/` | greedy | `cmaes/` with horizon 1 and a chunk of 5 |
 | `greedygradient/` | greedy | straight at the best lattice point, replan on arrival |
