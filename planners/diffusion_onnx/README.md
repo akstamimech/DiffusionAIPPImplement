@@ -8,6 +8,7 @@ processing in `onnx_sample_reference.py` (numpy + onnxruntime only).
 | file | what | size |
 |---|---|---|
 | `new_1200_int8.onnx` | INT8 (dynamic, uint8 weights, per-channel). Recommended. | 2.6 MB |
+| `new_1200_int16.onnx` | 16 bit (static QDQ: int16 weights per channel, uint16 activations, calibrated on 4096 real inputs). Near-lossless. | 4.1 MB |
 | `new_1200_int8_per_tensor.onnx` | INT8, per-tensor weights (slightly less accurate, possibly simpler kernels) | 2.6 MB |
 | `new_1200_fp32.onnx` | float32 baseline (matches PyTorch to 4e-6) | 6.3 MB |
 | `new_1200_deploy.json` | normalization constants, noise schedule, world bounds, input/output description | |
@@ -60,13 +61,23 @@ reproduces the plain composition of network calls.
   (two fp32 samples for the same condition differ by 32 m on average, since the policy is multimodal)
 - worst cases are conditions where the denoising path flips to another mode, not a uniform degradation
 
+### 16 bit (`new_1200_int16.onnx`)
+- sampled waypoints, same initial noise, 128 real conditions, vs fp32: mean 0.015 m, 95th percentile 0.04 m, worst 0.9 m
+  (INT8: 0.8 / 2.3 / 13 m); denoising loss 0.1669, identical to fp32
+- built by `export/quantize_int16.py`. It is static quantization, so the activation ranges come from real denoiser inputs
+  (noised expert waypoints at random diffusion steps with real belief maps); the calibration set has to be large (4096 here)
+- it uses the `com.microsoft` Quantize/DequantizeLinear operators because 16 bit is not in the standard opset used here;
+  a runtime without them (for example a hand-written C++ port) cannot load it and should use fp32 or INT8
+- on the x86 laptop it runs slower than fp32 (about 6.6 ms vs 3.4 ms per call): onnxruntime's CPU kernels dequantize
+  16-bit tensors to float, so 16 bit saves memory (4.1 vs 6.3 MB), not time
+
 ## Notes
 - Speed: on an x86 laptop INT8 and fp32 take the same time per call (about 3.6 ms, 1 thread); the INT8 gain
   measured here is size. Speed on a Raspberry Pi Zero 2 W (Cortex-A53) has not been measured.
 - Static INT8 quantization and int8 (signed) weights were tested and are clearly less accurate for this network.
 - About two thirds of the compute per call is the belief-map CNN, which does not depend on the diffusion step;
   splitting it into its own graph run once per plan would cut a 20-step plan to roughly a third.
-- Rebuild, from `scripts/`: `python planners/diffusion_onnx/export/export_onnx.py`, `.../make_reference_cases.py`, `.../quantize_onnx.py`.
+- Rebuild, from `scripts/`: `python planners/diffusion_onnx/export/export_onnx.py`, `.../make_reference_cases.py`, `.../quantize_onnx.py`, `.../quantize_int16.py`.
 - The reference clips waypoints to the field (x, y in 0..100 m, z in 10..40 m). `planner.py` additionally keeps
   the spline and the waypoints at least 4 m away from the field edge (two grid steps, `PlannerConfig.padding_cells`),
   as the simulation always did; a re-implementation needs that clamp to fly identical paths.

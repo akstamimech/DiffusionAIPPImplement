@@ -8,7 +8,8 @@ The pre/post processing around the call is in `onnx_reference.py` (numpy + onnxr
 
 | file | what | size |
 |---|---|---|
-| `new_imitate_1200_int8.onnx` | INT8 (dynamic, uint8 weights, per-channel). Recommended. | 2.5 MB |
+| `new_imitate_1200_int8.onnx` | INT8 (dynamic, uint8 weights, per-channel). Smallest. | 2.5 MB |
+| `new_imitate_1200_int16.onnx` | 16 bit (static QDQ: int16 weights per channel, uint16 activations, calibrated on 2048 real conditions). Near-lossless. | 4.0 MB |
 | `new_imitate_1200_int8_per_tensor.onnx` | INT8, per-tensor weights (slightly less accurate, possibly simpler kernels) | 2.5 MB |
 | `new_imitate_1200_fp32.onnx` | float32 baseline (matches PyTorch to 4e-6) | 6.0 MB |
 | `new_imitate_1200_deploy.json` | normalization constants, world bounds, input/output description | |
@@ -57,13 +58,24 @@ cases reproduce the PyTorch policy to under a centimeter.
 - the policy is deterministic, so unlike the diffusion model these errors are not hidden by mode flips: they are
   plain quantization error
 
+### 16 bit (`new_imitate_1200_int16.onnx`)
+- same 1024 conditions, vs fp32: mean 0.012 m, 95th percentile 0.026 m, worst 0.21 m; the loss is unchanged (0.0477 vs 0.0477)
+- a flight with it ends at exactly the fp32 total variance (17.2956 on map 5, 45 steps)
+- built by `export/quantize_int16.py`. It is static quantization, so the activation ranges come from real belief states;
+  the calibration set has to be large: with 256 conditions the ranges saturated on about 3% of unseen ones (worst waypoint
+  off by 14 m), with 2048 the worst case is 0.2 m
+- it uses the `com.microsoft` Quantize/DequantizeLinear operators because 16 bit is not in the standard opset used here;
+  a runtime without them (for example a hand-written C++ port) cannot load it and should use fp32 or INT8
+- on the x86 laptop it runs slower than fp32 (about 6.6 ms vs 3.4 ms per call): onnxruntime's CPU kernels dequantize
+  16-bit tensors to float, so 16 bit saves memory (4.0 vs 6.0 MB), not time
+
 ## Notes
 - Speed: on an x86 laptop one call takes about 8.6 ms in fp32 and 5.5 ms in INT8 (1 thread). Unlike the diffusion
   model, INT8 is faster here as well as smaller. Speed on a Raspberry Pi Zero 2 W (Cortex-A53) has not been measured.
 - The adaptive average pooling inside the belief-map CNN (25 x 25 -> 12 x 12) is replaced by two fixed matrix multiplies
   that equal it exactly, because the ONNX exporter cannot express it for this size.
 - Rebuild, from `scripts/`: `python planners/imitatetrans_onnx/export/export_onnx.py`, `.../make_reference_cases.py`,
-  `.../quantize_onnx.py`.
+  `.../quantize_onnx.py`, `.../quantize_int16.py`.
 - The reference clips waypoints to the field (x, y in 0..100 m, z in 10..40 m). `planner.py` additionally keeps the
   spline and the waypoints at least 4 m away from the field edge, as the simulation always did; a re-implementation needs
   that clamp to fly identical paths.

@@ -339,5 +339,29 @@ class ImitationOnnxPlannerWrapper(unittest.TestCase):
         self.assertLess(max(errs), 0.01)                                  # fp32 ONNX == PyTorch to well under a centimeter
 
 
+class Int16Models(unittest.TestCase):
+    """The 16-bit models must stay within centimeters (imitation) / decimeters (diffusion, 20 sampling steps) of PyTorch."""
+
+    def setUp(self):
+        try:
+            import onnxruntime  # noqa: F401
+        except ImportError:
+            self.skipTest("onnxruntime not installed")
+
+    def test_imitation_int16_reproduces_reference_cases(self):
+        d = ROOT / "planners" / "imitatetrans_onnx"
+        if not (d / "new_imitate_1200_int16.onnx").exists():
+            self.skipTest("int16 model not built")
+        from planners.imitatetrans_onnx.onnx_reference import selftest
+        self.assertLess(max(selftest(d / "new_imitate_1200_int16.onnx", d / "new_imitate_1200_deploy.json", d / "new_imitate_1200_reference_cases.npz")), 0.25)
+
+    def test_diffusion_int16_reproduces_reference_cases(self):
+        d = ROOT / "planners" / "diffusion_onnx"
+        if not (d / "new_1200_int16.onnx").exists():
+            self.skipTest("int16 model not built")
+        from planners.diffusion_onnx.onnx_sample_reference import selftest
+        self.assertLess(max(selftest(d / "new_1200_int16.onnx", d / "new_1200_deploy.json", d / "new_1200_reference_cases.npz")), 0.75)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
