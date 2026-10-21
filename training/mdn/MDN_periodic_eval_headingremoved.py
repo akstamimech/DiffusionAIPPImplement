@@ -54,6 +54,7 @@ from sim.metrics import compute_reconstruction_rmse, compute_variance_time_metri
 from legacy.singlemap.CMAES_classic_singlemap import compute_fov, dynamics_3d, waypoint_3d
 
 EVAL_EVERY = int(os.environ.get("EVAL_EVERY", 10))
+MDN_SELECT = os.environ.get("MDN_SELECT", "sample")   # how evaluation flights pick a plan from the mixture: "sample" | "argmax"
 EVAL_MAPTYPE = os.environ.get("EVAL_MAPTYPE", "NAIP")
 EVAL_MAP_OVERRIDE = os.environ.get("EVAL_MAP")  # None -> resolved to a held-out val map_id
 EVAL_TIMEALLOTED = 150
@@ -110,7 +111,7 @@ TOKEN_SPATIAL_DISC = 12
 
 
 
-DATASET_PATH = SCRIPT_DIR / "dataset_grf_60.pt"
+DATASET_PATH = SCRIPT_DIR / "HIGHOPT_DATASET_NAIP_141026.pt"
 data_dict = torch.load(
     DATASET_PATH,
     map_location="cpu",
@@ -850,6 +851,36 @@ class SparseTransAttentionBlock(nn.Module):
 
 
 
+class MixtureHead(nn.Module): 
+
+    """
+    wp_tokens [B, 8, D] -> logits [B, K], means [B, K, 3, 8], log_scales [B, K, 3, 8]
+    """
+
+
+    def __init__(self, token_dim, num_components = 4, min_sigma=0.01): 
+        super().__init__()
+        self.K, self.min_sigma = num_components, min_sigma
+        self.param_mlp = nn.Sequential(          # per waypoint token: K means + K scales, 3 values each
+            nn.LayerNorm(token_dim), nn.Linear(token_dim, token_dim), nn.SiLU(),
+            nn.Linear(token_dim, num_components * 2 * NUM_COORDS),
+        )
+
+        self.logit_mlp = nn.Sequential(          # one set of K weights per trajectory, from the pooled tokens
+            nn.LayerNorm(token_dim), nn.Linear(token_dim, token_dim), nn.SiLU(),
+            nn.Linear(token_dim, num_components),
+        )
+
+
+    def forward(self, wp_tokens):
+        B, W, _ = wp_tokens.shape
+        p = self.param_mlp(wp_tokens).view(B, W, self.K, 2, NUM_COORDS)    # [B, 8, K, 2, 3]
+        means = p[:, :, :, 0].permute(0, 2, 3, 1)                           # [B, K, 3, 8]
+        sigma = self.min_sigma + F.softplus(p[:, :, :, 1].permute(0, 2, 3, 1))
+        logits = self.logit_mlp(wp_tokens.mean(dim=1))                      # [B, K]
+        return logits, means, sigma.log()
+
+    
 # Class ConditionalResBlock1D(nn.Module):
 #     def __init__(self, in_channels, out_channels, cond_dim, groups=8):
 #         super().__init__()
@@ -895,12 +926,7 @@ class WaypointPredictor(nn.Module):
         )
 
 
-        self.output = nn.Sequential(
-            nn.LayerNorm(token_dim),
-            nn.Linear(token_dim, token_dim),
-            nn.SiLU(),
-            nn.Linear(token_dim, NUM_COORDS),
-        )
+        self.mixturehead = MixtureHead(token_dim, num_components=4, min_sigma=0.01)
         # nn.init.normal_(self.output.weight, mean=0.0, std=1e-3)
         # nn.init.zeros_(self.output.bias)
 
@@ -918,8 +944,8 @@ class WaypointPredictor(nn.Module):
         ) # [B, 8, token_dim]
         for attention_block in self.attention_blocks:
             wp_tokens = attention_block(wp_tokens, map_tokens) # [B, 8, token_dim]
-        WP_pred = self.output(wp_tokens) # [B, 8, 3]
-        return WP_pred.transpose(1, 2) # [B, 3, 8]
+        WP_pred = self.mixturehead(wp_tokens)
+        return WP_pred # (logits [B, K], means [B, K, 3, 8], log_scales [B, K, 3, 8])
         
 
 
@@ -962,6 +988,24 @@ def load_model_state_dict_compatible(model, state_dict):
 
 
 
+def mixture_nll(logits, means, log_scales, target):
+    """-log p(target) under the mixture. target [B, 3, 8] -> [B]."""
+    z = (target.unsqueeze(1) - means) * torch.exp(-log_scales)                          # [B, K, 3, 8]
+    log_prob = (-0.5 * z.pow(2) - log_scales - 0.5 * math.log(2 * math.pi)).sum(dim=[2, 3])   # [B, K]
+    return -torch.logsumexp(F.log_softmax(logits, dim=1) + log_prob, dim=1)
+
+
+def select_waypoints(logits, means, mode=None):
+    """Pick one component per sample: means [B, K, 3, 8] -> [B, 3, 8].
+    mode "sample": draw a component with probability softmax(logits); "argmax": the most likely component."""
+    mode = mode or MDN_SELECT
+    if mode == "sample":
+        k = torch.multinomial(F.softmax(logits, dim=1), 1).squeeze(1)
+    else:
+        k = logits.argmax(dim=1)
+    return means[torch.arange(means.shape[0], device=means.device), k]
+
+
 def get_loss(
     model,
     WP_true,
@@ -976,16 +1020,15 @@ def get_loss(
         dtype=torch.bfloat16,
         enabled=WP_true.is_cuda,
     ):
-        WP_pred = model(
+        logits, means, log_scales = model(
             meanvarmarker_map,
             current_position,
             total_variance_condition,
         )
-    WP_pred = WP_pred.float()
+    # the likelihood divides by sigma (down to min_sigma), so it is computed in float32
+    logits, means, log_scales = logits.float(), means.float(), log_scales.float()
 
-    waypoint_loss = (WP_pred - WP_true).pow(2).mean(dim=[1, 2])
-
-    per_sample_loss = waypoint_loss
+    per_sample_loss = mixture_nll(logits, means, log_scales, WP_true)   # [B] negative log-likelihood
 
     if weights is None:
         return per_sample_loss.mean()
@@ -1000,11 +1043,12 @@ def sample_plot_traj(output_path=None):
     current_position = conditions[0:1].to(next(model.parameters()).device)
     total_variance_condition = total_variance_conditions[0:1].to(next(model.parameters()).device)
 
-    traj = model(
+    logits, means, _ = model(
         meanvarmarker_map,
         current_position,
         total_variance_condition,
     )
+    traj = select_waypoints(logits, means)      # one component's trajectory, [1, 3, 8]
 
     traj_to_plot = extract_control_waypoints(traj[0].cpu())
     truth_to_plot = extract_control_waypoints(trajectories[0].cpu())
@@ -1159,11 +1203,12 @@ def sample_imitation_trajectory(
     ).to(device)[0, 0]
     meanvarmarker_map = torch.stack([mean_map, var_map, marker_map], dim=0).unsqueeze(0)
 
-    normalized_waypoints = model(
+    logits, means, _ = model(
         meanvarmarker_map,
         current_position_model,
         total_variance_condition,
     )
+    normalized_waypoints = select_waypoints(logits, means)    # one component's trajectory, [1, 3, 8]
 
     control_waypoints = extract_control_waypoints(normalized_waypoints[0])
     dense_traj = pytorch_cubic_spline(
